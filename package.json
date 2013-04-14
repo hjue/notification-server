@@ -1,0 +1,11 @@
+{
+    "name": "notification-server",
+    "description": "notification-server",
+    "version": "0.0.1",
+    "private": true,
+    "dependencies": {
+        "redis": "",
+        "socket.io": "",
+        "generic-pool": "",        
+    }
+}

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<script src="http://www1.csdn.net/js/jquery-1.4.2.min.js" type="text/javascript"></script>
+<script src="http://cms.csdnimg.cn/socket.io/socket.io.js"></script>
+<script>
+  var socket_server = "ask.csdn.net:8080";
+  socket_server = 'demo.csdn.net:8080';
+  var search_flag=0;
+  var online = io.connect('http://'+socket_server+'/online')
+    , admin = io.connect('http://'+socket_server+'/admin');
+    
+  admin.on('count', function (data) {
+      $('#count').html( data.count );
+      $('#usercount').html(data.usercount );
+  });
+
+  admin.on('search',function(data)
+  {
+    if(data.username)
+    {
+      var message = 'username:'+data.username + '\n';
+      for ( var key in data.userdata)
+      {
+         message += ' socket id:'+key + '  ip:' + data.userdata[key].ip;
+      }
+      alert(message);
+    }else
+    {
+      alert("not found!")
+    }
+
+  });
+  
+  online.on('notification',function(data)
+  {
+    if(data)
+    {
+      alert(data.title+'\n'+data.body);
+    }
+  });  
+
+  admin.on('onlineuser',function(data)
+  {
+    var onlineuser_html = '';
+    var is_include = 0;
+    var user_ip;
+    if(data.online_users)
+    {
+      for(var username in data.online_users){ 
+        if(search_flag==1 )
+        {
+          for(var socket_id in data.online_users[username])
+          {
+            user_ip = data.online_users[username][socket_id].ip;
+            if (/^124\.193\.87\.((14[4-9])|15\d)$/.test(user_ip)
+            || /^211\.103\.135\.1(([6-8]\d)|9[0-1])$/.test(user_ip)
+            || /^211\.103\.135\.24[0-7]$/.test(user_ip)
+            || /^220.113.6.((\d)|([12]\d))$/.test(user_ip)
+            || /^127.0.0.1$/.test(user_ip)  
+             )
+            {
+              is_include = 1 ;
+            }else
+            {
+              is_include = 0;
+            }            
+          }
+
+        }else
+        {
+          is_include = 1;
+        }
+        if (is_include==1)
+          onlineuser_html += '<a href="javascript:$(\'#to_username\').val(\''+username+'\')">' + username + '</a>\n';
+      }
+      $('#onlineuser').html( onlineuser_html);        
+    }
+    if(search_flag==1)
+    {
+      $('#btn_online_fuma_user').removeAttr("disabled");
+      search_flag = 0;
+    }else
+    {
+      $('#btn_onlineuser').removeAttr("disabled");      
+    }
+
+  });
+  
+  function search()
+  {
+    admin.emit("search", { username: $('#username').val() });
+  }
+  
+  function onlineuser()
+  {
+    $('#btn_onlineuser').attr("disabled","disabled");    
+    $('#onlineuser').html( '');            
+    admin.emit("onlineuser");
+  }
+  
+  function online_fuma_user()
+  {
+    $('#btn_online_fuma_user').attr("disabled","disabled");
+    $('#onlineuser').html( '');        
+    search_flag = 1;
+    admin.emit("onlineuser");
+  }  
+  
+  function send()
+  {
+    var title = $('#to_title').val();
+    var body = $('#to_body').val();
+    var to_username = $('#to_username').val();
+    if (title && to_username)
+    {
+      online.emit("notification", { to_username:to_username,title:title,body:body });
+    }
+  }
+</script>
+<style>
+a{margin:0 10px 10px 0}
+div{width:960px}
+</style>
+</head>
+<body>
+  <script>  var p__un = document.cookie.match(new RegExp("(^| )UserName=([^;]*)(;|$)"));
+  if(!p__un)
+  {
+    document.write('需要登陆才能使用！');
+  }
+  </script><br/>
+  
+  <input id="username" type="text" value="" > 
+  <input type="submit" value="search" onclick="javascript:search();">
+  &nbsp;&nbsp;<input id="btn_onlineuser" type="button" value="在线用户" onclick="javascript:onlineuser();">
+  <input id="btn_online_fuma_user" type="button" value="公司在线用户" onclick="javascript:online_fuma_user();"><br/>
+  <br/>
+  用户：<input id="to_username" type="text" value="" readonly> 
+  标题：<input id="to_title" type="text" value="恭喜你，中奖了！" > 
+  内容：
+  <textarea rows="4" cols="50" id="to_body">
+    今天是个好日子
+  </textarea>
+  <input type="submit" value="send" onclick="javascript:send();">
+    
+  <br/>  <br/>  <br/>
+  在线人数：<span id="count"></span>
+  <br/>
+  在线用户数：<span id="usercount"></span>
+  <br/>
+  在线用户：<div id="onlineuser"></div>
+</body></html>
